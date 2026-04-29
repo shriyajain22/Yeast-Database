@@ -1,1 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yeast Arginine Methylation Database</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #d4e4fc 100%);
+            min-height: 100vh;
+            color: #172033;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #1e4a76 0%, #2b6cb0 100%);
+            box-shadow: 0 4px 20px rgba(43,108,176,.25);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .db-button {
+            background: linear-gradient(135deg,#8b0000,#dc2626);
+            color: white;
+            border: none;
+            padding: .75rem 1.8rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139,0,0,.3);
+        }
+        .nav-links {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .nav-links a, .login-btn {
+            color: white;
+            text-decoration: none;
+            padding: .6rem 1.25rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: .9rem;
+            background: transparent;
+        }
+        .nav-links a:hover { background: rgba(255,255,255,.2); }
+        .login-btn { border: 2px solid white; }
+        .login-btn:hover {
+            background: white;
+            color: #2b6cb0;
+        }
+        .hero-section {
+            background:
+                linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.55)),
+                url("{{ url_for('static', filename='img/yeast.jpg') }}");
+            background-size: cover;
+            background-position: center 30%;
+            padding: 4rem 2rem 5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+        }
+        .centered-title {
+            text-align: center;
+            margin: 3rem 0 1.5rem;
+        }
+        .centered-title h1 {
+            font-size: 3.2rem;
+            color: white;
+            font-family: Georgia, serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,.3);
+        }
+        .centered-title p {
+            color: #f0f0f0;
+            font-size: 1.15rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,.5);
+        }
+        .center-search {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0 3rem;
+        }
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            width: 65%;
+            min-width: 320px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 60px;
+            background: rgba(255,255,255,.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,.1);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        .card {
+            background: rgba(255,255,255,.98);
+            border-radius: 28px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px -8px rgba(0,0,0,.08);
+            border: 1px solid rgba(43,108,176,.1);
+        }
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.25rem;
+            color: #2b6cb0;
+            border-left: 4px solid #dc2626;
+            padding-left: 1rem;
+        }
+        .card h3 {
+            font-size: 1.15rem;
+            margin: 1.25rem 0 .75rem;
+            color: #2b6cb0;
+        }
+        .btn {
+            display: inline-block;
+            padding: .75rem 1.6rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: .9rem;
+            font-weight: 700;
+            text-decoration: none;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg,#2b6cb0,#4299e1);
+            color: white;
+        }
+        .btn-secondary {
+            background: #94a3b8;
+            color: white;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(170px,1fr));
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg,#2b6cb0,#4299e1);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 24px;
+            text-align: center;
+        }
+        .stat-number { font-size: 2rem; font-weight: 800; }
+        .stat-label { font-size: .8rem; opacity: .92; margin-top: .5rem; letter-spacing: .5px; }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            overflow-x: auto;
+            display: block;
+            border-radius: 16px;
+        }
+        .data-table th, .data-table td {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table th {
+            background: linear-gradient(135deg,#2b6cb0,#4299e1);
+            color: white;
+            font-weight: 700;
+        }
+        .data-table tr:hover { background: #eff6ff; }
+        .badge-mono, .badge-di, .badge-exp, .badge-comp {
+            display: inline-block;
+            padding: .25rem .8rem;
+            border-radius: 30px;
+            font-size: .7rem;
+            font-weight: 700;
+            color: white;
+        }
+        .badge-mono { background: #f97316; }
+        .badge-di { background: #dc2626; }
+        .badge-exp { background: #10b981; }
+        .badge-comp { background: #f59e0b; }
+        .loading { text-align: center; padding: 2rem; }
+        .spinner {
+            border: 3px solid #e2e8f0;
+            border-top-color: #2b6cb0;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            animation: spin .8s linear infinite;
+            margin: 0 auto .8rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            margin: 1rem 0;
+        }
+        .alert-info { background: #dbeafe; color: #1e40af; border-left: 4px solid #2b6cb0; }
+        .alert-warning { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
+        .chart-container { max-width: 700px; margin: 1.5rem auto; text-align: center; }
+        .footer {
+            background: linear-gradient(135deg,#1e4a76,#2b6cb0);
+            color: #e0e7ff;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+        .footer-logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 3rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,.2);
+        }
+        .footer-logos img:first-child { height: 80px; width: auto; }
+        .footer-logos img:last-child { height: 45px; width: auto; background: white; padding: 6px 10px; border-radius: 10px; }
+        .footer-text { font-size: .8rem; line-height: 1.6; }
+        .help-assistant { position: fixed; bottom: 25px; right: 25px; z-index: 1000; }
+        .help-button {
+            background: linear-gradient(135deg,#2b6cb0,#4299e1);
+            color: white;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,.15);
+            font-size: 24px;
+        }
+        .help-window {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,.15);
+            display: none;
+            overflow: hidden;
+        }
+        .help-window.active { display: block; }
+        .help-header { background: linear-gradient(135deg,#2b6cb0,#4299e1); color: white; padding: 12px; font-weight: 700; }
+        .help-body { padding: 12px; max-height: 380px; overflow-y: auto; }
+        .help-question { padding: 10px; border-bottom: 1px solid #e2e8f0; cursor: pointer; font-weight: 600; color: #2b6cb0; }
+        .help-answer { display: none; padding: 10px; background: #f8fafc; font-size: .85rem; color: #475569; border-radius: 12px; margin: 5px 0; }
+        .help-answer.show, .faq-answer.show { display: block; }
+        .faq-question { background: #eff6ff; padding: 14px; cursor: pointer; border-radius: 16px; margin-bottom: 10px; font-weight: 700; color: #2b6cb0; }
+        .faq-answer { display: none; padding: 12px 18px; border-left: 3px solid #dc2626; margin-bottom: 12px; color: #334155; line-height: 1.6; }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 1100px;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg,#2b6cb0,#4299e1);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .close-modal { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; background: #f8fafc; }
+        .sequence-viewer {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+        }
+        .seq-line { display: flex; margin-bottom: .25rem; }
+        .seq-numbers { width: 80px; color: #94a3b8; font-size: 10px; text-align: right; padding-right: 12px; user-select: none; }
+        .seq-content { flex: 1; word-break: break-all; letter-spacing: 1px; }
+        .methylated-r {
+            background: #dc2626;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 0 2px;
+            display: inline-block;
+        }
+        .non-methylated-r {
+            background: #fef08a;
+            color: #854d0e;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 0 2px;
+            display: inline-block;
+        }
+        @media (max-width:700px) {
+            .centered-title h1 { font-size: 2rem; }
+            .search-box { width: 100%; }
+            .container { padding: 0 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="db-button" onclick="showPage('home')">Yeast Arginine Methylation Database</button>
+        <div class="nav-links">
+            <a onclick="showPage('home')">Home</a>
+            <a onclick="showPage('search')">Search</a>
+            <a onclick="showPage('sources')">Sources</a>
+            <a onclick="showPage('glossary')">Glossary</a>
+            <a onclick="showPage('about')">About</a>
+            <a onclick="showPage('faq')">FAQ</a>
+            <button class="login-btn" onclick="alert('Login feature coming soon.')">Login</button>
+        </div>
+    </div>
+    <div class="hero-section">
+        <div class="centered-title">
+            <h1>Protein Arginine Methylation<br>Database for <em>S. cerevisiae</em></h1>
+            <p>Comprehensive resource for protein arginine methylation sites in <em>Saccharomyces cerevisiae</em></p>
+        </div>
+        <div class="center-search">
+            <div class="search-box">
+                <input type="text" id="home-search" placeholder="Enter ORF ID (e.g., YDL014W) or gene name (e.g., NOP1)..." onkeydown="if(event.key==='Enter') doHomeSearch();">
+                <button class="btn btn-primary" onclick="doHomeSearch()">Search Database</button>
+            </div>
+        </div>
+    </div>
+    <div class="container" id="main-content">
+        <div class="loading"><div class="spinner"></div><p>Loading...</p></div>
+    </div>
+    <div class="modal" id="sequenceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Protein Sequence</h3>
+                <button class="close-modal" onclick="closeSequenceModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="sequence-body"></div>
+        </div>
+    </div>
+    <div class="help-assistant">
+        <div class="help-button" onclick="toggleHelp()">💬</div>
+        <div class="help-window" id="helpWindow">
+            <div class="help-header">Virtual Help Assistant</div>
+            <div class="help-body">
+                <div class="help-question" onclick="toggleAnswer('help1')">How do I search for a protein?</div>
+                <div class="help-answer" id="help1">Enter an ORF ID (e.g., YDL014W) or gene name (e.g., NOP1) in the search bar and click Search..</div>
+                <div class="help-question" onclick="toggleAnswer('help2')">What data does this database contain?</div>
+                <div class="help-answer" id="help2">Arginine methylation sites in <em> S. cerevisiae </em> proteins from three publications: Pang 2010, Low 2013, and Yagoub 2015.</div>
+                <div class="help-question" onclick="toggleAnswer('help3')">How can I download data?</div>
+                <div class="help-answer" id="help3">Go to the Search page, enter a term (or leave empty), and click Download CSV or TXT.</div>
+		<div class="help-question" onclick="toggleAnswer('help4')">What do mono and di mean?</div>
+                <div class="help-answer" id="help4">Mono = monomethylation (one methyl group), Di = dimethylation (two methyl groups).</div>
+		<div class="help-question" onclick="toggleAnswer('help5')">What is Hmt1p?</div>
+                <div class="help-answer" id="help5">The major arginine methyltransferase in yeast, responsible for methylating nucleolar and RNA-binding proteins.</div>
+                <div class="help-question" onclick="toggleAnswer('help6')">Who do I contact for questions?</div>
+                <div class="help-answer" id="help2">Dr. Michael Yu (mcyu@buffalo.edu) for data questions, or the BF768 course staff for technical issues.</div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="footer-logos">
+            <img src="{{ url_for('static', filename='img/BU_logo.png') }}" alt="BU" onerror="this.style.display='none'">
+            <img src="{{ url_for('static', filename='img/UB_logo.png') }}" alt="UB" onerror="this.style.display='none'">
+        </div>
+        <div class="footer-text">
+            <p>This project was developed at Boston University as part of <strong>BF768: Biological Databases</strong>, Spring 2026, under the instruction of <strong>G. Benson</strong>, in collaboration with the <strong><a href="https://www.michaelyulab.org/" target="_blank" style="color: #fbbf24; text-decoration: none;">Yu Lab</a></strong> (University at Buffalo).</p>
+            <p style="margin-top:.5rem;">Team: Addison Yam, Tungalan Ganbaatar, Manish Danda, Shriya Jain</p>
+        </div>
+    </div>
+    <script>
+        // IMPORTANT: Do not use url_for() for API URLs here.
+        // This keeps the app working when it is hosted under a folder like /students_26/Team6/yeast_db/yeast_db.
+        const BASE_PATH = window.location.pathname.replace(/\/$/, '');
+        const SEARCH_URL = BASE_PATH + "/api/search";
+        const STATS_URL = BASE_PATH + "/api/stats";
+        const SOURCES_URL = BASE_PATH + "/api/sources";
+        const DOWNLOAD_URL = BASE_PATH + "/api/download";
+        const PLOT_SITES_URL = BASE_PATH + "/api/plot/sites_per_protein";
+        const PLOT_SCORES_URL = BASE_PATH + "/api/plot/confidence_scores";
+        const PLOT_COMPARE_URL = BASE_PATH + "/api/plot/methylation_comparison";
+        function getProteinUrl(orfId) {
+            return BASE_PATH + "/api/protein/" + encodeURIComponent(orfId);
+        }
+        function getSequenceUrl(orfId) {
+            return BASE_PATH + "/api/protein/" + encodeURIComponent(orfId) + "/sequence";
+        }
+        function escapeHtml(value) {
+            return $('<div>').text(value ?? '').html();
+        }
+        function jsEscape(value) {
+            return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+        function showError(target, xhr, fallback) {
+            let msg = fallback || 'Something went wrong.';
+            if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
+                msg = xhr.responseJSON.error;
+            } else if (xhr && xhr.responseText) {
+                msg = xhr.responseText.substring(0, 250);
+            }
+            $(target).html(`<div class="alert alert-warning">${escapeHtml(msg)}</div>`);
+        }
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const page = urlParams.get('page');
+            const searchQuery = urlParams.get('q');
+            if (page === 'search' && searchQuery) {
+                showSearchWithQuery(searchQuery);
+            } else {
+                showPage(page || 'home');
+            }
+        });
+        function doHomeSearch() {
+            const q = $('#home-search').val().trim();
+            if (q.length < 2) {
+                alert('Please enter at least 2 characters');
+                return;
+            }
+            showSearchWithQuery(q);
+            history.replaceState(null, '', '?page=search&q=' + encodeURIComponent(q));
+        }
+        function toggleHelp() { $('#helpWindow').toggleClass('active'); }
+        function toggleAnswer(id) { $('#' + id).toggleClass('show'); }
+        function closeSequenceModal() { $('#sequenceModal').removeClass('active'); }
+        function showSearchWithQuery(query) {
+            showSearch();
+            $('#search-input').val(query);
+            doSearch();
+        }
+        function showPage(page) {
+            if (page === 'search') showSearch();
+            else if (page === 'sources') showSources();
+            else if (page === 'glossary') showGlossary();
+            else if (page === 'about') showAbout();
+            else if (page === 'faq') showFAQ();
+            else showHome();
+        }
+        function showHome() {
+            $('#main-content').html(`
+                <div class="card">
+                    <h2>Database Statistics</h2>
+                    <div id="stats-container" class="stats-grid">
+                        <div class="loading"><div class="spinner"></div><p>Loading stats...</p></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Interactive Visualizations</h2>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="loadInteractiveChart('sites')">Methylation Sites per Protein</button>
+                        <button class="btn btn-secondary" onclick="loadInteractiveChart('scores')">Mascot Confidence Scores</button>
+                        <button class="btn btn-secondary" onclick="loadInteractiveChart('comparison')">Mono/Di Distribution</button>
+                    </div>
+                    <div id="chart-container" class="chart-container"></div>
+                </div>
+            `);
+            $.getJSON(STATS_URL)
+                .done(function(data) {
+                    $('#stats-container').html(`
+                        <div class="stat-card"><div class="stat-number">${data.protein_count ?? 0}</div><div class="stat-label">Proteins</div></div>
+                        <div class="stat-card"><div class="stat-number">${data.site_count ?? 0}</div><div class="stat-label">Methylation Sites</div></div>
+                        <div class="stat-card"><div class="stat-number">${data.experimental_count ?? 0}</div><div class="stat-label">Experimental</div></div>
+                        <div class="stat-card"><div class="stat-number">${data.computational_count ?? 0}</div><div class="stat-label">Computational</div></div>
+                        <div class="stat-card"><div class="stat-number">${data.mono_count ?? 0}</div><div class="stat-label">Monomethylation</div></div>
+                        <div class="stat-card"><div class="stat-number">${data.di_count ?? 0}</div><div class="stat-label">Dimethylation</div></div>
+                        <div class="stat-card"><div class="stat-number">${data.hmt1_substrates ?? 0}</div><div class="stat-label">Hmt1p Substrates</div></div>
+                    `);
+                })
+                .fail(xhr => showError('#stats-container', xhr, 'Could not load stats. Check /api/stats.'));
+        }
+        function loadInteractiveChart(type) {
+            $('#chart-container').html('<div class="loading"><div class="spinner"></div><p>Loading chart...</p></div>');
+            if (type === 'sites') {
+                $('#chart-container').html(`<img src="${PLOT_SITES_URL}?limit=15&t=${Date.now()}" style="max-width:100%; border-radius:16px;" alt="Sites per protein">`);
+            } else if (type === 'scores') {
+                $('#chart-container').html(`<img src="${PLOT_SCORES_URL}?limit=15&t=${Date.now()}" style="max-width:100%; border-radius:16px;" alt="Confidence scores">`);
+            } else if (type === 'comparison') {
+                $('#chart-container').html(`<img src="${PLOT_COMPARE_URL}?t=${Date.now()}" style="max-width:100%; border-radius:16px;" alt="Methylation comparison">`);
+            }
+        }
+        function showSearch() {
+            $('#main-content').html(`
+                <div class="card">
+                    <h2>Search Database</h2>
+                    <div class="search-box" style="width:100%;">
+                        <input type="text" id="search-input" placeholder="Enter ORF ID or gene name..." onkeydown="if(event.key==='Enter') doSearch();">
+                        <button class="btn btn-primary" onclick="doSearch()">Search</button>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="downloadData('csv')">Download CSV</button>
+                        <button class="btn btn-secondary" onclick="downloadData('txt')">Download TXT</button>
+                    </div>
+                    <div id="search-results"></div>
+                </div>
+            `);
+        }
+        function doSearch() {
+            const q = $('#search-input').val().trim();
+            if (q.length < 1) {
+                alert('Please enter a search term');
+                return;
+            }
+            $('#search-results').html('<div class="loading"><div class="spinner"></div><p>Searching...</p></div>');
+            $.getJSON(SEARCH_URL, { q })
+                .done(function(rows) {
+                    if (rows.error) {
+                        $('#search-results').html(`<div class="alert alert-warning">${escapeHtml(rows.error)}</div>`);
+                        return;
+                    }
+                    if (!rows.length) {
+                        $('#search-results').html('<div class="alert alert-info">No matching proteins found.</div>');
+                        return;
+                    }
+                    let html = `
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ORF ID</th><th>Gene</th><th>Protein</th><th>Description</th><th>Sites</th><th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    rows.forEach(r => {
+                        html += `
+                            <tr>
+                                <td>${escapeHtml(r.orf_id)}</td>
+                                <td>${escapeHtml(r.gene_name || '-')}</td>
+                                <td>${escapeHtml(r.protein_name || '-')}</td>
+                                <td>${escapeHtml((r.description || '').substring(0, 160))}${(r.description || '').length > 160 ? '...' : ''}</td>
+                                <td>${r.site_count ?? 0}</td>
+                                <td><button class="btn btn-primary" onclick="showProtein('${jsEscape(r.orf_id)}')">View</button></td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table>';
+                    $('#search-results').html(html);
+                })
+                .fail(xhr => showError('#search-results', xhr, 'Search failed.'));
+        }
+        function downloadData(format) {
+            const q = $('#search-input').val()?.trim() || $('#home-search').val()?.trim() || '';
+            window.location.href = DOWNLOAD_URL + '?q=' + encodeURIComponent(q) + '&format=' + encodeURIComponent(format);
+        }
+        function showProtein(orfId) {
+            $('#main-content').html('<div class="loading"><div class="spinner"></div><p>Loading protein data...</p></div>');
+            $.getJSON(getProteinUrl(orfId))
+                .done(function(p) {
+                    if (p.error) {
+                        $('#main-content').html(`<div class="card alert alert-warning">${escapeHtml(p.error)}</div>`);
+                        return;
+                    }
+                    let sitesHtml = '';
+                    (p.methylation_sites || []).forEach(s => {
+                        const typeClass = String(s.methylation_type).toLowerCase() === 'di' ? 'badge-di' : 'badge-mono';
+                        const valClass = String(s.validation_type).toLowerCase() === 'computational' ? 'badge-comp' : 'badge-exp';
+                        sitesHtml += `
+                            <tr>
+                                <td>${escapeHtml(s.site_id)}</td>
+                                <td>${escapeHtml(s.position ?? '—')}</td>
+                                <td><span class="${typeClass}">${escapeHtml(s.methylation_type || 'N/A')}</span></td>
+                                <td>${escapeHtml(s.detection_method || '-')}</td>
+                                <td><span class="${valClass}">${escapeHtml(s.validation_type || '-')}</span></td>
+                                <td>${escapeHtml(s.methyltransferase || '-')}</td>
+                                <td>${escapeHtml(s.confidence_score ?? '-')}</td>
+                                <td>${escapeHtml(s.source_id ?? '-')}</td>
+                            </tr>
+                        `;
+                    });
+                    if (!sitesHtml) {
+                        sitesHtml = '<tr><td colspan="8">No methylation sites found for this protein.</td></tr>';
+                    }
+                    $('#main-content').html(`
+                        <div class="card">
+                            <button class="btn btn-secondary" onclick="showPage('search')">Back to Search</button>
+                            <h1>${escapeHtml(p.gene_name || '')} (${escapeHtml(p.orf_id)})</h1>
+                            <p><em>${escapeHtml(p.protein_name || '')}</em></p>
+                            <div class="button-group">
+                                <a href="https://www.yeastgenome.org/locus/${encodeURIComponent(p.orf_id)}" target="_blank" class="btn btn-primary">SGD</a>
+                                ${p.swiss_prot_acc ? `<a href="https://www.uniprot.org/uniprot/${encodeURIComponent(p.swiss_prot_acc)}" target="_blank" class="btn btn-secondary">UniProt</a>` : ''}
+                                <button class="btn btn-secondary" onclick="showSequence('${jsEscape(p.orf_id)}', '${jsEscape(p.gene_name || p.orf_id)}')">View Protein Sequence</button>
+                            </div>
+                            <h3>Description</h3>
+                            <p>${escapeHtml(p.description || 'No description')}</p>
+                            <h3>Cellular Location</h3>
+                            <p>${escapeHtml((p.cellular_location || []).join(', ') || 'Not specified')}</p>
+                            <h3>Details</h3>
+                            <ul>
+                                <li>Sequence length: ${escapeHtml(p.sequence_length || 'Unknown')} aa</li>
+                                <li>Organism: ${escapeHtml(p.organism || 'S. cerevisiae')}</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h2>Methylation Sites</h2>
+                            <div style="overflow-x:auto">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Site ID</th><th>Position</th><th>Type</th><th>Method</th><th>Validation</th><th>Methyltransferase</th><th>Score</th><th>Source</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${sitesHtml}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `);
+                })
+                .fail(xhr => showError('#main-content', xhr, 'Could not load protein.'));
+        }
+        function showSequence(orfId, geneName) {
+            $('#modal-title').text(`${geneName} (${orfId}) - Protein Sequence`);
+            $('#sequenceModal').addClass('active');
+            $('#sequence-body').html('<div class="loading"><div class="spinner"></div><p>Loading sequence...</p></div>');
+            $.getJSON(getSequenceUrl(orfId))
+                .done(function(data) {
+                    console.log('Sequence API response:', data);
+                    if (data.error) {
+                        $('#sequence-body').html(`<div class="alert alert-warning">${escapeHtml(data.error)}</div>`);
+                        return;
+                    }
+                    const sequence = String(data.sequence || '').trim();
+                    if (!sequence) {
+                        $('#sequence-body').html(`<div class="alert alert-warning">Sequence is empty. Check that the Protein table sequence column has data for ${escapeHtml(orfId)}.</div>`);
+                        return;
+                    }
+                    const methylatedPositions = new Set((data.methylated_positions || []).map(Number));
+                    const lineLength = 60;
+                    let html = `
+                        <p style="margin-bottom:1rem;">
+                            <strong>Length:</strong> ${sequence.length} aa.
+                            <span class="methylated-r">R</span> = methylated arginine;
+                            <span class="non-methylated-r">R</span> = other arginine.
+                        </p>
+                        <div class="sequence-viewer">
+                    `;
+                    for (let i = 0; i < sequence.length; i += lineLength) {
+                        const chunk = sequence.slice(i, i + lineLength);
+                        let content = '';
+                        for (let j = 0; j < chunk.length; j++) {
+                            const pos = i + j + 1;
+                            const aa = chunk[j];
+                            if (aa.toUpperCase() === 'R' && methylatedPositions.has(pos)) {
+                                content += `<span class="methylated-r" title="Methylated R${pos}">${escapeHtml(aa)}</span>`;
+                            } else if (aa.toUpperCase() === 'R') {
+                                content += `<span class="non-methylated-r" title="Arginine R${pos}">${escapeHtml(aa)}</span>`;
+                            } else {
+                                content += escapeHtml(aa);
+                            }
+                        }
+                        html += `
+                            <div class="seq-line">
+                                <div class="seq-numbers">${i + 1}-${i + chunk.length}</div>
+                                <div class="seq-content">${content}</div>
+                            </div>
+                        `;
+                    }
+                    html += '</div>';
+                    $('#sequence-body').html(html);
+                })
+                .fail(function(xhr) {
+                    console.log('Sequence API failed:', xhr);
+                    $('#sequence-body').html(`
+                        <div class="alert alert-warning">
+                            Sequence could not be loaded.<br>
+                            Test this URL directly:<br>
+                            <code>${escapeHtml(getSequenceUrl(orfId))}</code>
+                        </div>
+                    `);
+                });
+        }
+        function showSources() {
+            $('#main-content').html(`
+                <div class="card">
+                    <h2>Literature Sources</h2>
+                    <div id="sources-container" class="loading"><div class="spinner"></div></div>
+                </div>
+            `);
+            $.getJSON(SOURCES_URL)
+                .done(function(rows) {
+                    if (rows.error) {
+                        $('#sources-container').html(`<div class="alert alert-warning">${escapeHtml(rows.error)}</div>`);
+                        return;
+                    }
+                    let html = `
+                        <table class="data-table">
+                            <thead><tr><th>ID</th><th>Citation</th><th>Journal</th><th>Year</th><th>Method</th><th>PubMed</th></tr></thead>
+                            <tbody>
+                    `;
+                    rows.forEach(s => {
+                        html += `
+                            <tr>
+                                <td>${escapeHtml(s.source_id)}</td>
+                                <td>${escapeHtml(s.citation || '-')}</td>
+                                <td>${escapeHtml(s.journal || '-')}</td>
+                                <td>${escapeHtml(s.year || '-')}</td>
+                                <td>${escapeHtml(s.method || '-')}</td>
+                                <td>${s.pubmed_id ? `<a target="_blank" href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(s.pubmed_id)}">${escapeHtml(s.pubmed_id)}</a>` : '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table>';
+                    $('#sources-container').html(html);
+                })
+                .fail(xhr => showError('#sources-container', xhr, 'Could not load sources.'));
+        }
+        function showGlossary() {
+            $('#main-content').html(`
+                <div class="card">
+                    <h2>Glossary</h2>
+                    <h3>ORF ID</h3><p>Systematic open reading frame identifier (e.g., YDL014W).</p>
+                    <h3>Monomethylation</h3><p>Addition of one methyl group to an arginine (mR).</p>
+                    <h3>Dimethylation</h3><p>Addition of two methyl groups to an arginine (dR).</p>
+                    <h3>FindMod</h3><p>Computational tool for predicting PTMs from mass spec data.</p>
+                    <h3>LC-MS/MS</h3><p>Liquid chromatography-tandem mass spectrometry.</p>
+		    <h3>Targeted MS</h3><p>Mass spectrometry focusing on specific peptides.</p>
+                    <h3>Mascot score</h3><p>Confidence score for peptide identifications</p>
+		    <h3>Hmt1p</h3><p>Major arginine methyltransferase in yeast.</p>
+                    <h3>SGD</h3><p>Saccharomyces Genome Database</p>
+                    <h3>UniProt</h3><p>Universal Protein Resource</p>
+                </div>
+                </div>
+            `);
+        }
+        function showAbout() {
+            $('#main-content').html(`
+                <div class="card">
+                    <h2>About</h2>
+                    <p>This database organizes arginine methylation data in <em>Saccharomyces cerevisiae</em> from three peer-reviewed studies.</p>
+		    <p>This project was developed at Boston University as part of <strong>BF768: Biological Databases</strong>, Spring 2026, under the instruction of <strong>G. Benson</strong>, in collaboration with the <strong>Yu Lab</strong> (University at Buffalo).</p>
+                    <p>Data provided by Dr. Michael Yu.</p>
+                </div>
+            `);
+        }
+        function showFAQ() {
+            $('#main-content').html(`
+                <div class="card">
+                    <h2>Frequently Asked Questions</h2>
+                    <div class="faq-question" onclick="toggleAnswer('faq1')">What is arginine methylation?</div>
+                    <div class="faq-answer" id="faq1">A post-translational modification where methyl groups are added to arginine residues, regulating gene expression, RNA processing, and cellular signaling.</div>
+                    <div class="faq-question" onclick="toggleAnswer('faq2')">Which yeast strains are included?</div>
+                    <div class="faq-answer" id="faq2">Wild-type <em>Saccharomyces cerevisiae</em> strains from Low 2013, plus data from Pang 2010 and Yagoub 2015.</div>
+                    <div class="faq-question" onclick="toggleAnswer('faq3')">How many methylation sites are in the database?</div>
+                    <div class="faq-answer" id="faq3">99 methylation sites across 79 unique proteins.</div>
+	            <div class="faq-question" onclick="toggleAnswer('faq4')">How often is the database updated?</div>
+                    <div class="faq-answer" id="faq4">New data will be added as Dr. Yu's lab publishes new findings. Contact Dr. Yu for updates.</div>
+		    <div class="faq-question" onclick="toggleAnswer('faq5')">Can I contribute my own data?</div>
+		    <div class="faq-answer" id="faq5">Please contact Dr. Michael Yu (mcyu@buffalo.edu) to discuss data contributions.</div>
+		    <div class="faq-question" onclick="toggleAnswer('faq6')">How do I cite this database?</div>
+		    <div class="faq-answer" id="faq6">Cite as: Yeast Arginine Methylation Database, developed at Boston University BF768 Spring 2026, Yu Lab collaboration.</div>
+		    <div class="faq-question" onclick="toggleAnswer('faq7')">What is Hmt1p and why is it important?</div>
+		    <div class="faq-answer" id="faq7">Hmt1p is the major arginine methyltransferase in yeast, responsible for methylating many nucleolar and RNA-binding proteins, including NOP1 and NPL3.</div>
+		    <div class="faq-question" onclick="toggleAnswer('faq8')">Are there methylation sites without specific positions?</div>
+		    <div class="faq-answer" id="faq8">Yes. Low 2013 identified methylated proteins but not specific residue positions. These are marked with "Not reported" in the position column.</div>
+                </div>
+            `);
+        }
+    </script>
+</body>
+</html>
 
