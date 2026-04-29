@@ -8,7 +8,6 @@ The system is designed to query a backend database and dynamically display resul
 
 This project demonstrates integration of backend database querying, web development, and data visualization techniques.
 
----
 
 ## Features
 
@@ -19,13 +18,11 @@ This project demonstrates integration of backend database querying, web developm
 * **Template-based frontend rendering** using Flask
 * **Database-driven backend** for structured biological data
 
----
 
 ## Biological Context
 
 Yeast (*Saccharomyces cerevisiae*) is widely used as a model organism in biology due to its well-characterized genome and importance in studying cellular processes. It is commonly used in systems biology and genetics research to understand gene function and regulatory networks.
 
----
 
 ## Project Structure
 
@@ -41,7 +38,6 @@ Yeast-Database/
 └── README.md
 ```
 
----
 
 ## Technologies Used
 
@@ -51,7 +47,6 @@ Yeast-Database/
 * **JavaScript + AJAX** – dynamic interaction and data fetching
 * **Matplotlib / Charts** – data visualization (if applicable)
 
----
 
 ## How It Works
 
@@ -60,8 +55,6 @@ Yeast-Database/
 3. The backend queries the database
 4. Results are returned and rendered dynamically in the browser
 
-
----
 
 ## Contributors
 
