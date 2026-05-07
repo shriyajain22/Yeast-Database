@@ -62,3 +62,5 @@ Yeast-Database/
 * Addison Yam
 * Tungalan Ganbaatar
 * Manish Danda
+
+Note: *This project was developed as part of the Biological Database Analysis (BF768) coursework at Boston University.*
